@@ -14,7 +14,7 @@ import (
 const (
 	helpFlagUsage  = "Help and usage instructions"
 	forceFlagUsage = "Force overwrite of destination file if it exists"
-	readBuffer     = 2 * 2 * 2 * 2 * 1024 * 1024
+	readBuffer     = 128 * 1024 * 1024   // further increased 2025-05-13 (Björn)
 )
 
 var helpPtr = flag.Bool("help", false, helpFlagUsage)
