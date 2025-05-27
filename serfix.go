@@ -8,13 +8,15 @@ import (
 	"io"
 	"os"
 	"regexp"
+	"strconv"
+	"strings"
 	"runtime"
 )
 
 const (
-	helpFlagUsage  = "Help and usage instructions"
-	forceFlagUsage = "Force overwrite of destination file if it exists"
-	readBuffer     = 128 * 1024 * 1024   // further increased 2025-05-13 (Björn)
+	helpFlagUsage     = "Help and usage instructions"
+	forceFlagUsage    = "Force overwrite of destination file if it exists"
+	readBufferDefault = 16 // 16M buffer, can be overwritten by --buffer-size 
 )
 
 var helpPtr = flag.Bool("help", false, helpFlagUsage)
@@ -23,16 +25,39 @@ var counter int = 0
 var lexer = regexp.MustCompile(`s:\d+:\\?\".*?\\?\";`)
 var re = regexp.MustCompile(`(s:)(\d+)(:\\?\")(.*?)(\\?\";)`)
 var esc = regexp.MustCompile(`(\\"|\\'|\\\\|\\a|\\b|\\f|\\n|\\r|\\s|\\t|\\v|\\0)`)
+var buffer_size_in_mb = readBufferDefault;
 
 func init() {
 	// Short flags too
 	flag.BoolVar(helpPtr, "h", false, helpFlagUsage)
 	flag.BoolVar(forcePtr, "f", false, forceFlagUsage)
+	flag.StringVar(&bufferSize, "--buffer-size", '16M', forceFlagUsage)
+
 }
 
 func main() {
 	numCPU := runtime.NumCPU()
 	runtime.GOMAXPROCS(numCPU)
+
+	// APPLY read buffer size override via command line 'buffer-size' parameter 
+	var buffer_size_prefix = "--buffer-size="
+	for _, arg := range os.Args[1:] {
+		if strings.HasPrefix(arg, buffer_size_prefix) {
+			// this is buffer_size override parameter
+			if strings.HasSuffix(strings.ToLower(arg), "m") {
+				buffer_size_in_mb, error := strconv.ParseInt(arg[:len(arg)], 10, 32)
+				int_parameter, error := strconv.Atoi(arg[:len(arg)-1])
+				if error != nil {
+    				fmt.Println("Failed to parse buffer-size value:", error)
+					return
+				}
+				buffer_size_in_mb = int_parameter
+     		} else {
+     			panic("The --buffer-size paramter requires a number followed by an 'M'")
+     		}
+		}
+	}
+
 
 	// Handle flags
 	flag.Parse()
@@ -78,7 +103,7 @@ func main() {
 		// close out file
 		defer tempfile.Close()
 
-		r := bufio.NewReaderSize(infile, readBuffer)
+		r := bufio.NewReaderSize(infile, 1024 * 1024 * buffer_size_in_mb)
 
 		line, err := r.ReadString('\n')
 		for err == nil {
@@ -124,7 +149,7 @@ func main() {
 		}
 
 	} else {
-		r := bufio.NewReaderSize(os.Stdin, readBuffer)
+		r := bufio.NewReaderSize(os.Stdin, 1024 * 1024 * buffer_size_in_mb)
 
 		line, isPrefix, err := r.ReadLine()
 		for err == nil && !isPrefix {
@@ -153,7 +178,8 @@ func PrintUsage() {
 	fmt.Println("Usage: serfix [flags] filename [outfilename]")
 	fmt.Println("Alt. Usage: cat filename | serfix")
 	fmt.Println("")
-	fmt.Println("\t -f, --force \t\t\t Force overwrite of destination file if it exists.")
-	fmt.Println("\t -h, --help  \t\t\t Print serfix help.")
+	fmt.Println("\t -f, --force   \t\t\t Force overwrite of destination file if it exists.")
+	fmt.Println("\t -h, --help    \t\t\t Print serfix help.")
+	fmt.Println("\t --buffer-size \t\t\t adjust the serfix buffer size, default is 16M")
 	fmt.Println("")
 }
