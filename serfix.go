@@ -38,26 +38,6 @@ func main() {
 	numCPU := runtime.NumCPU()
 	runtime.GOMAXPROCS(numCPU)
 
-	// // APPLY read buffer size override via command line 'buffer-size' parameter 
-	// var buffer_size_prefix = "--buffer-size="
-	// for _, arg := range os.Args[1:] {
-	// 	if strings.HasPrefix(arg, buffer_size_prefix) {
-	// 		// this is buffer_size override parameter
-	// 		if strings.HasSuffix(strings.ToLower(arg), "m") {
-	// 			buffer_size_in_mb, error := strconv.ParseInt(arg[:len(arg)], 10, 32)
-	// 			int_parameter, error := strconv.Atoi(arg[:len(arg)-1])
-	// 			if error != nil {
-    // 				fmt.Println("Failed to parse buffer-size value:", error)
-	// 				return
-	// 			}
-	// 			buffer_size_in_mb = int_parameter
-    //  		} else {
-    //  			panic("The --buffer-size paramter requires a number followed by an 'M'")
-    //  		}
-	// 	}
-	// }
-
-
 	// Handle flags
 	flag.Parse()
 
