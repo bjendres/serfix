@@ -8,8 +8,6 @@ import (
 	"io"
 	"os"
 	"regexp"
-	"strconv"
-	"strings"
 	"runtime"
 )
 
@@ -19,44 +17,45 @@ const (
 	readBufferDefault = 16 // 16M buffer, can be overwritten by --buffer-size 
 )
 
-var helpPtr = flag.Bool("help", false, helpFlagUsage)
-var forcePtr = flag.Bool("force", false, forceFlagUsage)
+var helpPtr       = flag.Bool("help", false, helpFlagUsage)
+var forcePtr      = flag.Bool("force", false, forceFlagUsage)
+
 var counter int = 0
 var lexer = regexp.MustCompile(`s:\d+:\\?\".*?\\?\";`)
 var re = regexp.MustCompile(`(s:)(\d+)(:\\?\")(.*?)(\\?\";)`)
 var esc = regexp.MustCompile(`(\\"|\\'|\\\\|\\a|\\b|\\f|\\n|\\r|\\s|\\t|\\v|\\0)`)
-var buffer_size_in_mb = readBufferDefault;
+var buffer_size_in_mb = 8;
 
 func init() {
 	// Short flags too
+	flag.IntVar(&buffer_size_in_mb, "n", readBufferDefault, "String buffer size in MB")
 	flag.BoolVar(helpPtr, "h", false, helpFlagUsage)
 	flag.BoolVar(forcePtr, "f", false, forceFlagUsage)
-	flag.StringVar(&bufferSize, "--buffer-size", '16M', forceFlagUsage)
-
+    flag.IntVar(&buffer_size_in_mb, "buffer-size", readBufferDefault, "String buffer size in MB")
 }
 
 func main() {
 	numCPU := runtime.NumCPU()
 	runtime.GOMAXPROCS(numCPU)
 
-	// APPLY read buffer size override via command line 'buffer-size' parameter 
-	var buffer_size_prefix = "--buffer-size="
-	for _, arg := range os.Args[1:] {
-		if strings.HasPrefix(arg, buffer_size_prefix) {
-			// this is buffer_size override parameter
-			if strings.HasSuffix(strings.ToLower(arg), "m") {
-				buffer_size_in_mb, error := strconv.ParseInt(arg[:len(arg)], 10, 32)
-				int_parameter, error := strconv.Atoi(arg[:len(arg)-1])
-				if error != nil {
-    				fmt.Println("Failed to parse buffer-size value:", error)
-					return
-				}
-				buffer_size_in_mb = int_parameter
-     		} else {
-     			panic("The --buffer-size paramter requires a number followed by an 'M'")
-     		}
-		}
-	}
+	// // APPLY read buffer size override via command line 'buffer-size' parameter 
+	// var buffer_size_prefix = "--buffer-size="
+	// for _, arg := range os.Args[1:] {
+	// 	if strings.HasPrefix(arg, buffer_size_prefix) {
+	// 		// this is buffer_size override parameter
+	// 		if strings.HasSuffix(strings.ToLower(arg), "m") {
+	// 			buffer_size_in_mb, error := strconv.ParseInt(arg[:len(arg)], 10, 32)
+	// 			int_parameter, error := strconv.Atoi(arg[:len(arg)-1])
+	// 			if error != nil {
+    // 				fmt.Println("Failed to parse buffer-size value:", error)
+	// 				return
+	// 			}
+	// 			buffer_size_in_mb = int_parameter
+    //  		} else {
+    //  			panic("The --buffer-size paramter requires a number followed by an 'M'")
+    //  		}
+	// 	}
+	// }
 
 
 	// Handle flags
